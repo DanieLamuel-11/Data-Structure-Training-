@@ -1,87 +1,101 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Structure to represent a print job
+// Define the structure for a print job
 typedef struct PrintJob {
-    int jobID;
+    int jobId;
     int length;
+    struct PrintJob *next;
 } PrintJob;
 
-// Structure to represent a node in the queue
-typedef struct Node {
-    PrintJob data;
-    struct Node* next;
-} Node;
+// Define the structure for the printer queue
+typedef struct {
+    PrintJob *front;
+    PrintJob *rear;
+} PrinterQueue;
 
-// Structure to represent the queue
-typedef struct Queue {
-    Node* front;
-    Node* rear;
-} Queue;
-
-// Function to create a new node
-Node* createNode(PrintJob job) {
-    Node* newNode = (Node*)malloc(sizeof(Node));
-    newNode->data = job;
-    newNode->next = NULL;
-    return newNode;
+// Function to create a new print job
+PrintJob* createPrintJob(int jobId, int length) {
+    PrintJob *newJob = (PrintJob*)malloc(sizeof(PrintJob));
+    if (newJob == NULL) {
+        printf("Memory allocation failed!\n");
+        exit(1);
+    }
+    newJob->jobId = jobId;
+    newJob->length = length;
+    newJob->next = NULL;
+    return newJob;
 }
 
-// Function to initialize the queue
-Queue* createQueue() {
-    Queue* queue = (Queue*)malloc(sizeof(Queue));
+// Function to initialize the printer queue
+void initializeQueue(PrinterQueue *queue) {
     queue->front = queue->rear = NULL;
-    return queue;
 }
 
 // Function to check if the queue is empty
-int isEmpty(Queue* queue) {
-    return queue->front == NULL;
+int isEmpty(PrinterQueue *queue) {
+    return (queue->front == NULL);
 }
 
 // Function to enqueue a print job into the queue
-void enqueue(Queue* queue, PrintJob job) {
-    Node* newNode = createNode(job);
+void enqueue(PrinterQueue *queue, PrintJob *job) {
     if (isEmpty(queue)) {
-        queue->front = queue->rear = newNode;
+        queue->front = queue->rear = job;
     } else {
-        queue->rear->next = newNode;
-        queue->rear = newNode;
+        queue->rear->next = job;
+        queue->rear = job;
     }
 }
 
 // Function to dequeue a print job from the queue
-PrintJob dequeue(Queue* queue) {
+PrintJob* dequeue(PrinterQueue *queue) {
     if (isEmpty(queue)) {
-        printf("Queue is empty.\n");
-        exit(EXIT_FAILURE);
+        printf("Queue is empty, cannot dequeue!\n");
+        exit(1);
     }
-    Node* temp = queue->front;
-    PrintJob job = temp->data;
+    PrintJob *temp = queue->front;
     queue->front = queue->front->next;
-    free(temp);
-    return job;
+    if (queue->front == NULL) {
+        queue->rear = NULL;
+    }
+    return temp;
+}
+
+// Function to print the contents of the queue
+void printQueue(PrinterQueue *queue) {
+    if (isEmpty(queue)) {
+        printf("Queue is empty!\n");
+        return;
+    }
+    printf("Printer Queue:\n");
+    PrintJob *current = queue->front;
+    while (current != NULL) {
+        printf("Job ID: %d, Length: %d\n", current->jobId, current->length);
+        current = current->next;
+    }
 }
 
 int main() {
-    Queue* printerQueue = createQueue();
+    PrinterQueue printerQueue;
+    initializeQueue(&printerQueue);
 
-    // Sample print jobs
-    PrintJob job1 = {1, 5};
-    PrintJob job2 = {2, 3};
-    PrintJob job3 = {3, 7};
+    // Example: Enqueue some print jobs
+    enqueue(&printerQueue, createPrintJob(1, 5));
+    enqueue(&printerQueue, createPrintJob(2, 3));
+    enqueue(&printerQueue, createPrintJob(3, 7));
+    enqueue(&printerQueue, createPrintJob(4, 2));
 
-    // Enqueue the print jobs
-    enqueue(printerQueue, job1);
-    enqueue(printerQueue, job2);
-    enqueue(printerQueue, job3);
+    // Print the contents of the queue
+    printQueue(&printerQueue);
 
-    // Dequeue and process the print jobs
-    while (!isEmpty(printerQueue)) {
-        PrintJob currentJob = dequeue(printerQueue);
-        printf("Processing job ID %d with length %d...\n", currentJob.jobID, currentJob.length);
-        // Simulate printing process
-    }
+    // Example: Dequeue and print a job
+    PrintJob *processedJob = dequeue(&printerQueue);
+    printf("Processing Job: ID %d, Length %d\n", processedJob->jobId, processedJob->length);
+    free(processedJob);
+
+    // Print the updated contents of the queue
+    printQueue(&printerQueue);
 
     return 0;
 }
+
